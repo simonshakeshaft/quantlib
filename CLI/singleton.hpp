@@ -26,7 +26,17 @@
 
 #include <ql/types.hpp>
 #include <boost/shared_ptr.hpp>
+#if defined(QL_PATCH_MSVC71)
+    #pragma unmanaged
+#elif defined(QL_PATCH_MSVC)
+    #pragma managed(push, off)
+#endif
 #include <boost/noncopyable.hpp>
+#if defined(QL_PATCH_MSVC71)
+    #pragma managed
+#elif defined(QL_PATCH_MSVC)
+    #pragma managed(pop)
+#endif
 #include <map>
 
 namespace QuantLib {
@@ -64,6 +74,9 @@ namespace QuantLib {
     */
     template <class T>
     class Singleton : private boost::noncopyable {
+      private:
+        //! the unique instance
+        static std::map<Integer, boost::shared_ptr<T> > instances_;
       public:
         //! access to the unique instance
         static T& instance();
@@ -71,14 +84,15 @@ namespace QuantLib {
         Singleton() {}
     };
 
+    // static member definition 
+    template <class T>
+    std::map<Integer, boost::shared_ptr<T> > Singleton<T>::instances_;
+
     // template definitions
 
     template <class T>
     T& Singleton<T>::instance() {
-        // Construct on first use Idiom
-        // Avoids 'static initialisation order fiasco' - See C++ FAQ 10.14
-        // http://www.parashift.com/c++-faq/static-init-order.html
-        static std::map<Integer, boost::shared_ptr<T> > instances_;
+        //static std::map<Integer, boost::shared_ptr<T> > instances_;
         #if defined(QL_ENABLE_SESSIONS)
         Integer id = sessionId();
         #else
